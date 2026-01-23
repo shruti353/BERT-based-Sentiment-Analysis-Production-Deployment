@@ -13,16 +13,15 @@ venv/
 env/
 ENV/
 
-# Data files (will be mounted as volumes)
-data/raw/*
-data/processed/*
+# Data (mounted as volume)
+data/
 
-# Model checkpoints (will be mounted as volumes)
-models/checkpoints/*
+# Model checkpoints (mounted as volume)
+models/checkpoints/
 *.pth
 *.bin
 
-# MLflow runs (will be mounted as volumes)
+# MLflow
 mlruns/
 mlartifacts/
 
@@ -30,7 +29,7 @@ mlartifacts/
 logs/
 *.log
 
-# Jupyter notebooks
+# Jupyter
 notebooks/
 *.ipynb
 .ipynb_checkpoints/
@@ -43,22 +42,14 @@ notebooks/
 
 # Git
 .git/
-.gitignore
 .gitattributes
 
-# Documentation
-README.md
+# Docs
 docs/
-*.md
 
 # Tests
 tests/
 pytest.ini
-
-# Docker files
-Dockerfile*
-docker-compose*.yml
-.dockerignore
 
 # CI/CD
 .github/
