@@ -5,11 +5,11 @@
 
 FROM python:3.10-slim
 
+WORKDIR /app
+
 # ----------------
 # System setup
 # ----------------
-WORKDIR /app
-
 RUN apt-get update && apt-get install -y \
     build-essential \
     git \
@@ -62,41 +62,36 @@ RUN touch \
 # ----------------
 # Pipeline runner
 # ----------------
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-echo \"========================================\"\n\
-echo \"BERT Sentiment Analysis – Docker Pipeline\"\n\
-echo \"========================================\"\n\
-\n\
-python - <<EOF\n\
-import torch\n\
-print(\"CUDA available:\", torch.cuda.is_available())\n\
-EOF\n\
-\n\
-if [ ! -f data/processed/train.csv ]; then\n\
-  echo \"📥 Preparing data...\"\n\
-  python src/data/prepare_data.py\n\
-else\n\
-  echo \"✅ Data already prepared\"\n\
-fi\n\
-\n\
-echo \"🚀 Training model...\"\n\
-python src/models/train.py\n\
-\n\
-echo \"========================================\"\n\
-echo \"🎉 Pipeline completed successfully\"\n\
-echo \"Model location: models/checkpoints\"\n\
-echo \"MLflow runs: mlruns/\"\n\
-echo \"========================================\"\n\
-' > /app/run_pipeline.sh && chmod +x /app/run_pipeline.sh
+RUN cat <<'EOF' > /app/run_pipeline.sh
+#!/bin/bash
+set -e
 
-# ----------------
-# Default command
-# ----------------
-CMD ["/app/run_pipeline.sh"]
+echo "========================================"
+echo "BERT Sentiment Analysis – Docker Pipeline"
+echo "========================================"
 
-# ----------------
-# Volumes (Windows-safe)
-# ----------------
-VOLUME ["/app/data", "/app/models", "/app/mlruns", "/app/logs"]
+python - <<PYCODE
+import torch
+print("CUDA available:", torch.cuda.is_available())
+PYCODE
+
+if [ ! -f data/processed/train.csv ]; then
+  echo "📥 Preparing data..."
+  python src/data/prepare_data.py
+else
+  echo "✅ Data already prepared"
+fi
+
+echo "🚀 Training model..."
+python src/models/train.py
+
+echo "========================================"
+echo "🎉 Pipeline completed successfully"
+echo "Model location: models/checkpoints"
+echo "MLflow runs: mlruns/"
+echo "========================================"
+EOF
+
+RUN sed -i 's/\r$//' /app/run_pipeline.sh && chmod +x /app/run_pipeline.sh
+
+CMD ["/bin/bash", "/app/run_pipeline.sh"]
