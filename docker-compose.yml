@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # Training service - runs the complete pipeline
+  training:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: training
+    image: bert-sentiment-training:latest
+    container_name: bert-training
+    
+    # GPU support (uncomment if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    
+    volumes:
+      # Persist data, models, and MLflow runs
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./mlruns:/app/mlruns
+      - ./logs:/app/logs
+      # Cache transformers models
+      - huggingface-cache:/app/cache
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TRANSFORMERS_CACHE=/app/cache
+      - HF_HOME=/app/cache
+      # Optional: Set number of workers for data loading
+      - NUM_WORKERS=2
+    
+    # Automatically restart if training fails
+    restart: on-failure
+    
+    # Resource limits (adjust based on your system)
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    
+    networks:
+      - bert-network
+  
+  # MLflow UI service - view experiments
+  mlflow-ui:
+    image: bert-sentiment-training:latest
+    container_name: mlflow-ui
+    
+    command: mlflow ui --host 0.0.0.0 --backend-store-uri file:///app/mlruns
+    
+    ports:
+      - "5000:5000"
+    
+    volumes:
+      - ./mlruns:/app/mlruns
+    
+    depends_on:
+      - training
+    
+    networks:
+      - bert-network
+    
+    restart: always
+
+networks:
+  bert-network:
+    driver: bridge
+
+volumes:
+  huggingface-cache:
+    driver: local
